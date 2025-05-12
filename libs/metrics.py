@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.stats import pearsonr
 from collections import defaultdict
 from shapely.geometry import Point, Polygon
@@ -79,3 +80,26 @@ def compute_clarke(pred, ref, xmin=0, xmax=400, ymin=0, ymax=400):
         'region_e_2': results['region_e_2'],
         'out_of_bounds': results['out_of_bounds'],
     }
+
+def compute_hypo_metric(pred, ref, threshold=70):
+    pred = np.where(pred < threshold, 1, 0)
+    ref = np.where(ref < threshold, 1, 0)
+
+    tp = np.sum((pred == 1) & (ref == 1))
+    tn = np.sum((pred == 0) & (ref == 0))
+    fp = np.sum((pred == 1) & (ref == 0))
+    fn = np.sum((pred == 0) & (ref == 1))
+
+    confusion_matrix = np.array([[tp, fp], [fn, tn]]) / (tp + tn + fp + fn)
+    accuracy = confusion_matrix[0, 0] + confusion_matrix[1, 1]
+    sensitivity = tp / (tp + fn)
+    specificity = tn / (tn + fp)
+
+    return confusion_matrix, {
+        'accuracy': accuracy,
+        'sensitivity': sensitivity,
+        'specificity': specificity,
+    }
+
+def compute_rmse(pred, ref):
+    return np.sqrt(np.mean((pred - ref) ** 2))

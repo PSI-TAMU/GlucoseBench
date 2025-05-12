@@ -1,9 +1,10 @@
 import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 from shapely.geometry import Polygon, Point
 from collections import defaultdict
-from libs.metrics import compute_clarke
+from libs.metrics import compute_clarke, compute_hypo_metric, compute_rmse
 
 def plot_clarke_error_grid(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, style='point', bin_size=1):
     clarke_score, clarke_score_details = compute_clarke(pred, gt, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
@@ -75,114 +76,60 @@ def plot_clarke_error_grid(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, sty
     ax.set_ylabel('Predicted')
     return clarke_score
 
+def plot_hypo_metric(ax, pred, gt):
+    cm, score = compute_hypo_metric(pred, gt, threshold=70)
+    sns.heatmap(cm, annot=True, fmt=".2f", cmap='Blues', ax=ax)
+    ax.set_xticklabels(['Hypo', 'Normal'])
+    ax.set_yticklabels(['Hypo', 'Normal'])
+    ax.set_xlabel('GT')
+    ax.set_ylabel('Predicted')
+    ax.set_title('Train - Accuracy: {:.2f} | Sensitivity: {:.2f} | Specificity: {:.2f}'.format(score['accuracy'], score['sensitivity'], score['specificity']))
+    return score
 
-def draw_clarke_heatmap(ax, ref, pred, 
-                        xmin=30, xmax=190, ymin=30, ymax=190,
-                        bin_size=1):
-    """
-    Plots a Clarke error grid heatmap (counts per 1×1 mg/dL bin)
-    for reference vs. predicted glucose, then overlays the
-    Clarke regions.
-    
-    ax   : matplotlib Axes
-    ref  : array-like of reference glucose values
-    pred : array-like of predicted glucose values
-    """
-    # --- 1) compute 2D histogram at 1 mg/dL resolution ---
-    bins = np.arange(xmin, xmax + bin_size, bin_size)
-    H, xedges, yedges = np.histogram2d(ref, pred, bins=[bins, bins], density=True)
-    
-    # plot heatmap
-    mesh = ax.pcolormesh(
-        xedges, yedges, H.T,
-        shading='auto',
-        cmap='viridis'
-    )
-    cbar = plt.colorbar(mesh, ax=ax, pad=0.02)
-    cbar.set_label(f'Density (bin = {bin_size}×{bin_size} mg/dL)')
-    cbar.ax.tick_params(labelsize=12)
-    
-    # --- 2) overlay Clarke grid lines ---
-    # Lines: y = 1.2x region boundaries
-    ax.plot([70/1.2, ymax/1.2], [70, ymax], color='white', lw=2)
-    ax.plot([70, xmax], [70*.8, xmax*.8], color='white', lw=2)
-    ax.plot([70, 70+(ymax-180)], [180, ymax], color='white', lw=2)
-    ax.plot([180-(70-ymin), 180], [ymin, 70], color='white', lw=2)
-    ax.hlines(70, xmin, 70/1.2,   color='white', lw=2)
-    ax.hlines(180, xmin, 70,      color='white', lw=2)
-    ax.hlines(70, 180, xmax,      color='white', lw=2)
-    ax.vlines(70, ymin, ymax,     color='white', lw=2)
-    ax.vlines(180, ymin, 70,      color='white', lw=2)
-    
-    # --- 3) shade Clarke regions and annotate percentages ---
-    # (same region definitions as your original function)
-    regions = {}
-    # region A1
-    regions['A1'] = Polygon([
-        (70, 70*1.2), (ymax/1.2, ymax), (ymax, ymax),
-        (xmax, xmax*0.8), (70, 70*0.8), (70, 70*0.8)
-    ])
-    # region A2
-    regions['A2'] = Polygon([
-        (xmin, ymin), (xmin, 70), (70/1.2, 70),
-        (70, 70*1.2), (70, ymin)
-    ])
-    # region B1
-    regions['B1'] = Polygon([
-        (70, 70*1.2), (70, 180), (70+(ymax-180), ymax),
-        (ymax/1.2, ymax)
-    ])
-    # region B2
-    regions['B2'] = Polygon([
-        (70, ymin), (70, 70*0.8), (xmax, xmax*0.8),
-        (xmax, 70), (180, 70), (180-(70-ymin), ymin)
-    ])
-    # region C1
-    regions['C1'] = Polygon([
-        (70,180), (70, ymax), (70+(ymax-180), ymax)
-    ])
-    # region C2
-    regions['C2'] = Polygon([
-        (180, ymin), (180, 70), (180-(70-ymin), ymin)
-    ])
-    # region D
-    regions['D'] = Polygon([
-        (xmin, 70), (70/1.2, 70), (70, 70*1.2),
-        (70, 180), (xmin, 180)
-    ])
-    # region E1
-    regions['E1'] = Polygon([
-        (xmin, 180), (xmin, ymax), (70, ymax), (70, 180)
-    ])
-    # region E2
-    regions['E2'] = Polygon([
-        (180, ymin), (180, 70), (xmax, 70), (xmax, ymin)
-    ])
-    
-    # count points per region
-    counts = defaultdict(int)
-    total = len(ref)
-    for x,y in zip(ref, pred):
-        p = Point(x,y)
-        for name, poly in regions.items():
-            if poly.covers(p):
-                counts[name] += 1
-                break
-    
-    # shade & annotate
-    for name, poly in regions.items():
-        cen = poly.centroid
-        pct = counts[name] / total * 100
-        ax.text(
-            cen.x, cen.y,
-            f'{pct:.1f}%',
-            ha='center', va='center',
-            fontsize=12, color='white',
-        )
-    
+def plot_distribution(ax, pred, gt, bins=50):
+    # histogram
+    ax.hist(pred, bins=bins, alpha=0.5, label='Predicted', density=True, color='blue')
+    ax.hist(gt, bins=bins, alpha=0.5, label='GT', density=True, color='orange')
+    ax.set_xlabel('Glucose')
+    ax.set_ylabel('Density')
+    ax.legend()
+    return
+
+def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5):
+    rmse = compute_rmse(pred, gt)
+
+    _dict = defaultdict(list)
+    for i in range(pred.shape[0]):
+        _dict[float(gt[i])].append(float(pred[i]))
+
+    xrange_mean = []
+    xrange_std = []
+    for pos in range(40, 180, bin_size):
+        _xrange = []
+        for key in sorted(_dict.keys()):
+            if key >= pos and key < pos + bin_size:
+                _xrange.extend(_dict[key])
+        if len(_xrange) > 0:
+            xrange_std.append(np.std(np.array(_xrange)))
+            xrange_mean.append(np.mean(np.array(_xrange)))
+        else:
+            xrange_std.append(0)
+            xrange_mean.append(0)
+
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
-    ax.set_xlabel('Reference Glucose (mg/dL)', fontsize=14)
-    ax.set_ylabel('Predicted Glucose (mg/dL)', fontsize=14)
-    ax.set_title(f'Clarke Error Grid with {bin_size}×{bin_size} mg/dL Heatmap', fontsize=16)
-    return mesh, counts
+    
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    
+    ax.plot(xlim, xlim, color='k', lw=2, linestyle='--')
+    ax.plot(range(40, 180, bin_size), xrange_mean, label='Predicted', color='red')
+    ax.hlines(70, xlim[0], xlim[1], color='blue', lw=2, linestyle='--')
+    ax.vlines(70, ylim[0], ylim[1], color='blue', lw=2, linestyle='--')
+    ax.fill_between(range(40, 180, bin_size), np.array(xrange_mean) - np.array(xrange_std), np.array(xrange_mean) + np.array(xrange_std), alpha=0.2, color='red')
+    ax.set_xlabel('GT')
+    ax.set_ylabel('Predicted')
+
+    ax.set_title('RMSE: {:.2f}'.format(rmse))
+    ax.legend()
+    return rmse
