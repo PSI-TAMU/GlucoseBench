@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 from shapely.geometry import Polygon, Point
 from collections import defaultdict
-from libs.metrics import compute_clarke, compute_hypo_metric, compute_rmse
+from glucosebench.metrics import compute_clarke, compute_hypo_metric, compute_rmse
 
 def plot_clarke_error_grid(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, style='point', bin_size=1):
     clarke_score, clarke_score_details = compute_clarke(pred, gt, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)

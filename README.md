@@ -14,6 +14,7 @@
 ```bash
 git clone https://github.com/PSI-TAMU/GlucoseBench.git
 cd GlucoseBench
+pip install -e .
 ```
 
 ## 🚀 Quick Start
@@ -22,7 +23,7 @@ cd GlucoseBench
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from libs.plot import plot_clarke_error_grid, plot_hypo_metric, plot_distribution, plot_rmse
+from glucosebench.plot import plot_clarke_error_grid, plot_hypo_metric, plot_distribution, plot_rmse
 
 # Load predictions
 df = pd.read_csv('./samples/01.csv')
@@ -73,7 +74,7 @@ print(rmse)
 
 ```
 GlucoseBench/
-├── libs/
+├── glucosebench/
 │   ├── plot.py               # Clarke grid, RMSE, hypo metrics, etc.
 ├── samples/
 │   └── 01.csv                # Sample prediction CSV (gt, pred)
