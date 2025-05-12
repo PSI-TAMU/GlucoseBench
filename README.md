@@ -1,6 +1,6 @@
 # GlucoseBench
 
-**GlucoseBench** is a repository for evaluating and visualizing the performance of glucose prediction models. It provides clinically meaningful metrics and visual tools such as the Clarke Error Grid, hypoglycemia-focused scores, distribution plots, and RMSE visualizations.
+**GlucoseBench** is a python library for evaluating and visualizing the performance of glucose prediction models. It provides clinically meaningful metrics and visual tools such as the Clarke Error Grid, hypoglycemia-focused scores, distribution plots, and RMSE visualizations.
 
 ## 🔍 Key Features
 
