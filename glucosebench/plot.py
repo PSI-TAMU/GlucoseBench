@@ -133,3 +133,15 @@ def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5):
     ax.set_title('RMSE: {:.2f}'.format(rmse))
     ax.legend()
     return rmse
+
+
+def plot_summary(pred_glucose, gt_glucose, xmin=0, xmax=400, ymin=0, ymax=400):
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    clarke_score = plot_clarke_error_grid(ax[0][0], pred_glucose, gt_glucose, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, style='point')
+    ax[0][0].set_title(f"Correlation: {clarke_score['corr']:.2f}")
+    hypo_score = plot_hypo_metric(ax[0][1], pred_glucose, gt_glucose)
+    plot_distribution(ax[1][0], pred_glucose, gt_glucose)
+    ax[1][0].set_title('Distribution of Glucose')
+    rmse = plot_rmse(ax[1][1], pred_glucose, gt_glucose)
+    plt.show()
+    return clarke_score, hypo_score, rmse
