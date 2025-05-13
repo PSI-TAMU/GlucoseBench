@@ -135,7 +135,7 @@ def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5):
     return rmse
 
 
-def plot_summary(pred_glucose, gt_glucose, xmin=0, xmax=400, ymin=0, ymax=400):
+def plot_summary(pred_glucose, gt_glucose, xmin=0, xmax=400, ymin=0, ymax=400, out_path=None):
     fig, ax = plt.subplots(2, 2, figsize=(10, 10))
     clarke_score = plot_clarke_error_grid(ax[0][0], pred_glucose, gt_glucose, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, style='point')
     ax[0][0].set_title(f"Correlation: {clarke_score['corr']:.2f}")
@@ -143,5 +143,7 @@ def plot_summary(pred_glucose, gt_glucose, xmin=0, xmax=400, ymin=0, ymax=400):
     plot_distribution(ax[1][0], pred_glucose, gt_glucose)
     ax[1][0].set_title('Distribution of Glucose')
     rmse = plot_rmse(ax[1][1], pred_glucose, gt_glucose, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
+    if out_path is not None:
+        plt.savefig(out_path, bbox_inches='tight')
     plt.show()
     return clarke_score, hypo_score, rmse
