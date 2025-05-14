@@ -123,10 +123,10 @@ def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5):
     ylim = ax.get_ylim()
     
     ax.plot(xlim, xlim, color='k', lw=2, linestyle='--')
-    ax.plot(range(40, 180, bin_size), xrange_mean, label='Predicted', color='red')
+    ax.plot(range(xmin, xmax, bin_size), xrange_mean, label='Predicted', color='red')
     ax.hlines(70, xlim[0], xlim[1], color='blue', lw=2, linestyle='--')
     ax.vlines(70, ylim[0], ylim[1], color='blue', lw=2, linestyle='--')
-    ax.fill_between(range(40, 180, bin_size), np.array(xrange_mean) - np.array(xrange_std), np.array(xrange_mean) + np.array(xrange_std), alpha=0.2, color='red')
+    ax.fill_between(range(xmin, xmax, bin_size), np.array(xrange_mean) - np.array(xrange_std), np.array(xrange_mean) + np.array(xrange_std), alpha=0.2, color='red')
     ax.set_xlabel('GT')
     ax.set_ylabel('Predicted')
 
