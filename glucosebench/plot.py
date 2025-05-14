@@ -104,7 +104,7 @@ def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5):
 
     xrange_mean = []
     xrange_std = []
-    for pos in range(40, 180, bin_size):
+    for pos in range(xmin, xmax, bin_size):
         _xrange = []
         for key in sorted(_dict.keys()):
             if key >= pos and key < pos + bin_size:
