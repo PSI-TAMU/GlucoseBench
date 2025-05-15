@@ -83,7 +83,7 @@ def plot_hypo_metric(ax, pred, gt):
     ax.set_yticklabels(['Hypo', 'Normal'])
     ax.set_xlabel('GT')
     ax.set_ylabel('Predicted')
-    ax.set_title('Train - Accuracy: {:.2f} | Sensitivity: {:.2f} | Specificity: {:.2f}'.format(score['accuracy'], score['sensitivity'], score['specificity']))
+    ax.set_title('Accuracy: {:.2f} | Sensitivity: {:.2f} | Specificity: {:.2f}'.format(score['accuracy'], score['sensitivity'], score['specificity']))
     return score
 
 def plot_distribution(ax, pred, gt, bins=50):
