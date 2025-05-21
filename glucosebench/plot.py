@@ -74,22 +74,31 @@ def plot_clarke_error_grid(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, sty
     ax.set_xlim(xmin, xmax)
     ax.set_xlabel('GT')
     ax.set_ylabel('Predicted')
+    # add legend for correlation
+    corr = clarke_score['corr']
+    ax.plot([], [], 'o', color='red', label='Correlation: {:.2f}'.format(corr))
+    ax.legend(loc='upper right', fontsize=10)
     return clarke_score
 
-def plot_hypo_metric(ax, pred, gt):
+def plot_hypo_metric(ax, pred, gt, show_title=False):
     cm, score = compute_hypo_metric(pred, gt, threshold=70)
     sns.heatmap(cm, annot=True, fmt=".2f", cmap='Blues', ax=ax)
     ax.set_xticklabels(['Hypo', 'Normal'])
     ax.set_yticklabels(['Hypo', 'Normal'])
     ax.set_xlabel('GT')
     ax.set_ylabel('Predicted')
-    ax.set_title('Accuracy: {:.2f} | Sensitivity: {:.2f} | Specificity: {:.2f}'.format(score['accuracy'], score['sensitivity'], score['specificity']))
+    if show_title:
+        ax.set_title('Accuracy: {:.2f} | Sensitivity: {:.2f} | Specificity: {:.2f}'.format(score['accuracy'], score['sensitivity'], score['specificity']))
     return score
 
-def plot_distribution(ax, pred, gt, bins=50):
+def plot_distribution(ax, pred, gt, bins=50, show_kde=True):
     # histogram
     ax.hist(pred, bins=bins, alpha=0.5, label='Predicted', density=True, color='blue')
+    if show_kde:
+        sns.kdeplot(pred, ax=ax, color='blue')
     ax.hist(gt, bins=bins, alpha=0.5, label='GT', density=True, color='orange')
+    if show_kde:
+        sns.kdeplot(gt, ax=ax, color='orange')
     ax.set_xlabel('Glucose')
     ax.set_ylabel('Density')
     ax.legend()
@@ -123,22 +132,20 @@ def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5):
     ylim = ax.get_ylim()
     
     ax.plot(xlim, xlim, color='k', lw=2, linestyle='--')
-    ax.plot(range(xmin, xmax, bin_size), xrange_mean, label='Predicted', color='red')
+    ax.plot(range(xmin, xmax, bin_size), xrange_mean, label='Predicted (RMSE: {:.2f})'.format(rmse), color='red')
     ax.hlines(70, xlim[0], xlim[1], color='blue', lw=2, linestyle='--')
     ax.vlines(70, ylim[0], ylim[1], color='blue', lw=2, linestyle='--')
     ax.fill_between(range(xmin, xmax, bin_size), np.array(xrange_mean) - np.array(xrange_std), np.array(xrange_mean) + np.array(xrange_std), alpha=0.2, color='red')
     ax.set_xlabel('GT')
     ax.set_ylabel('Predicted')
 
-    ax.set_title('RMSE: {:.2f}'.format(rmse))
-    ax.legend()
+    ax.legend(loc='upper right', fontsize=10)
     return rmse
 
 
-def plot_summary(pred_glucose, gt_glucose, xmin=0, xmax=400, ymin=0, ymax=400, out_path=None):
+def plot_summary(pred_glucose, gt_glucose, xmin=0, xmax=400, ymin=0, ymax=400, out_path=None, style='point'):
     fig, ax = plt.subplots(2, 2, figsize=(10, 10))
-    clarke_score = plot_clarke_error_grid(ax[0][0], pred_glucose, gt_glucose, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, style='point')
-    ax[0][0].set_title(f"Correlation: {clarke_score['corr']:.2f}")
+    clarke_score = plot_clarke_error_grid(ax[0][0], pred_glucose, gt_glucose, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, style=style)
     hypo_score = plot_hypo_metric(ax[0][1], pred_glucose, gt_glucose)
     plot_distribution(ax[1][0], pred_glucose, gt_glucose)
     ax[1][0].set_title('Distribution of Glucose')
