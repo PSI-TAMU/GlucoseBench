@@ -91,20 +91,20 @@ def plot_hypo_metric(ax, pred, gt, show_title=False):
         ax.set_title('Accuracy: {:.2f} | Sensitivity: {:.2f} | Specificity: {:.2f}'.format(score['accuracy'], score['sensitivity'], score['specificity']))
     return score
 
-def plot_distribution(ax, pred, gt, bins=50, show_kde=True):
+def plot_distribution(ax, pred, gt, bins=50, use_kde=True):
     # histogram
-    ax.hist(pred, bins=bins, alpha=0.5, label='Predicted', density=True, color='blue')
-    if show_kde:
-        sns.kdeplot(pred, ax=ax, color='blue')
-    ax.hist(gt, bins=bins, alpha=0.5, label='GT', density=True, color='orange')
-    if show_kde:
-        sns.kdeplot(gt, ax=ax, color='orange')
+    if use_kde:
+        sns.kdeplot(pred, ax=ax, color='blue', fill=True, label='Predicted')
+        sns.kdeplot(gt, ax=ax, color='orange', fill=True, label='GT')
+    else:
+        ax.hist(pred, bins=bins, alpha=0.5, label='Predicted', density=True, color='blue')
+        ax.hist(gt, bins=bins, alpha=0.5, label='GT', density=True, color='orange')
     ax.set_xlabel('Glucose')
     ax.set_ylabel('Density')
     ax.legend()
     return
 
-def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5):
+def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5, title=None, show_bounds=True):
     rmse = compute_rmse(pred, gt)
 
     _dict = defaultdict(list)
@@ -132,14 +132,20 @@ def plot_rmse(ax, pred, gt, xmin=0, xmax=400, ymin=0, ymax=400, bin_size=5):
     ylim = ax.get_ylim()
     
     ax.plot(xlim, xlim, color='k', lw=2, linestyle='--')
-    ax.plot(range(xmin, xmax, bin_size), xrange_mean, label='Predicted (RMSE: {:.2f})'.format(rmse), color='red')
     ax.hlines(70, xlim[0], xlim[1], color='blue', lw=2, linestyle='--')
     ax.vlines(70, ylim[0], ylim[1], color='blue', lw=2, linestyle='--')
-    ax.fill_between(range(xmin, xmax, bin_size), np.array(xrange_mean) - np.array(xrange_std), np.array(xrange_mean) + np.array(xrange_std), alpha=0.2, color='red')
+    if show_bounds:
+        if title is not None:
+            ax.fill_between(range(xmin, xmax, bin_size), np.array(xrange_mean) - np.array(xrange_std), np.array(xrange_mean) + np.array(xrange_std), alpha=0.1)
+            ax.plot(range(xmin, xmax, bin_size), xrange_mean, label='{} (RMSE: {:.2f})'.format(title, rmse))
+        else:
+            ax.fill_between(range(xmin, xmax, bin_size), np.array(xrange_mean) - np.array(xrange_std), np.array(xrange_mean) + np.array(xrange_std), alpha=0.1, color='red')
+            ax.plot(range(xmin, xmax, bin_size), xrange_mean, label='Predicted (RMSE: {:.2f})'.format(rmse), color='red')
+
     ax.set_xlabel('GT')
     ax.set_ylabel('Predicted')
 
-    ax.legend(loc='upper right', fontsize=10)
+    ax.legend(loc='lower right')
     return rmse
 
 
