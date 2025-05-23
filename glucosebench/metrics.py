@@ -110,12 +110,21 @@ def compute_hypo_metric(pred, ref, threshold=70, xmin=40, xmax=180):
 
         tprs.append(tpr)
         fprs.append(fpr)
-    auc = np.trapz(tprs, fprs)
+    
+    # 1. Sort by x
+    sorted_indices = np.argsort(fprs)
+    x_sorted = np.array(fprs)[sorted_indices]
+    y_sorted = np.array(tprs)[sorted_indices]
+    # 2. Remove duplicates in x (optional but safe)
+    x_unique, unique_indices = np.unique(x_sorted, return_index=True)
+    y_unique = y_sorted[unique_indices]
+    # 3. Compute AUC using trapezoidal rule
+    auc = np.trapz(y_unique, x_unique)
 
     return confusion_matrix, {
         'auc': auc,
-        'tprs': tprs,
-        'fprs': fprs,
+        'tprs': y_unique,
+        'fprs': x_unique,
         'accuracy': accuracy,
         'sensitivity': sensitivity,
         'specificity': specificity,
