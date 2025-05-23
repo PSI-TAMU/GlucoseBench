@@ -123,6 +123,8 @@ def compute_hypo_metric(pred, ref, threshold=70, xmin=40, xmax=180, return_auc=F
         y_sorted = np.array(tprs)[sorted_indices]
         # 2. Smooth the curve
         y_mono = IsotonicRegression(out_of_bounds='clip').fit_transform(x_sorted, y_sorted)
+        y_mono = np.concatenate(([0], y_mono, [1]))
+        x_sorted = np.concatenate(([0], x_sorted, [1]))
         # 3. Compute AUC using trapezoidal rule
         auc = np.trapz(y_mono, x_sorted)
 
