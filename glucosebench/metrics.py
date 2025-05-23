@@ -1,6 +1,8 @@
+import tqdm
 import numpy as np
 from scipy.stats import pearsonr
 from collections import defaultdict
+from sklearn.isotonic import IsotonicRegression
 from shapely.geometry import Point, Polygon
 
 def compute_clarke(pred, ref, xmin=0, xmax=400, ymin=0, ymax=400):
@@ -81,7 +83,7 @@ def compute_clarke(pred, ref, xmin=0, xmax=400, ymin=0, ymax=400):
         'out_of_bounds': results['out_of_bounds'],
     }
 
-def compute_hypo_metric(pred, ref, threshold=70, xmin=40, xmax=180):
+def compute_hypo_metric(pred, ref, threshold=70, xmin=40, xmax=180, return_auc=False):
     binary_pred = np.where(pred < threshold, 1, 0)
     binary_ref = np.where(ref < threshold, 1, 0)
 
@@ -95,36 +97,39 @@ def compute_hypo_metric(pred, ref, threshold=70, xmin=40, xmax=180):
     sensitivity = tp / (tp + fn)
     specificity = tn / (tn + fp)
 
-    # auc 
-    tprs = []
-    fprs = []
-    thresholds = np.linspace(xmin, xmax, xmax - xmin)
-    for threshold in thresholds:
-        tp = np.sum((pred < threshold) & (ref < threshold))
-        fp = np.sum((pred < threshold) & (ref >= threshold))
-        fn = np.sum((pred >= threshold) & (ref < threshold))
-        tn = np.sum((pred >= threshold) & (ref >= threshold))
+    auc = None
+    y_mono = None
+    x_sorted = None
+    if return_auc:
+        # auc 
+        tprs = []
+        fprs = []
+        thresholds = np.linspace(xmin, xmax, xmax - xmin)
+        for threshold in tqdm.tqdm(thresholds):
+            tp = np.sum((pred < threshold) & (ref < threshold))
+            fp = np.sum((pred < threshold) & (ref >= threshold))
+            fn = np.sum((pred >= threshold) & (ref < threshold))
+            tn = np.sum((pred >= threshold) & (ref >= threshold))
 
-        tpr = tp / (tp + fn) if (tp + fn) > 0 else 0
-        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
+            tpr = tp / (tp + fn) if (tp + fn) > 0 else 0
+            fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
 
-        tprs.append(tpr)
-        fprs.append(fpr)
-    
-    # 1. Sort by x
-    sorted_indices = np.argsort(fprs)
-    x_sorted = np.array(fprs)[sorted_indices]
-    y_sorted = np.array(tprs)[sorted_indices]
-    # 2. Remove duplicates in x (optional but safe)
-    x_unique, unique_indices = np.unique(x_sorted, return_index=True)
-    y_unique = y_sorted[unique_indices]
-    # 3. Compute AUC using trapezoidal rule
-    auc = np.trapz(y_unique, x_unique)
+            tprs.append(tpr)
+            fprs.append(fpr)
+        
+        # 1. Sort by x
+        sorted_indices = np.argsort(fprs)
+        x_sorted = np.array(fprs)[sorted_indices]
+        y_sorted = np.array(tprs)[sorted_indices]
+        # 2. Smooth the curve
+        y_mono = IsotonicRegression(out_of_bounds='clip').fit_transform(x_sorted, y_sorted)
+        # 3. Compute AUC using trapezoidal rule
+        auc = np.trapz(y_mono, x_sorted)
 
     return confusion_matrix, {
         'auc': auc,
-        'tprs': y_unique,
-        'fprs': x_unique,
+        'tprs': y_mono,
+        'fprs': x_sorted,
         'accuracy': accuracy,
         'sensitivity': sensitivity,
         'specificity': specificity,
