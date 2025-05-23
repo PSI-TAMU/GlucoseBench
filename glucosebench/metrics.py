@@ -81,21 +81,41 @@ def compute_clarke(pred, ref, xmin=0, xmax=400, ymin=0, ymax=400):
         'out_of_bounds': results['out_of_bounds'],
     }
 
-def compute_hypo_metric(pred, ref, threshold=70):
-    pred = np.where(pred < threshold, 1, 0)
-    ref = np.where(ref < threshold, 1, 0)
+def compute_hypo_metric(pred, ref, threshold=70, xmin=40, xmax=180):
+    binary_pred = np.where(pred < threshold, 1, 0)
+    binary_ref = np.where(ref < threshold, 1, 0)
 
-    tp = np.sum((pred == 1) & (ref == 1))
-    tn = np.sum((pred == 0) & (ref == 0))
-    fp = np.sum((pred == 1) & (ref == 0))
-    fn = np.sum((pred == 0) & (ref == 1))
+    tp = np.sum((binary_pred == 1) & (binary_ref == 1))
+    tn = np.sum((binary_pred == 0) & (binary_ref == 0))
+    fp = np.sum((binary_pred == 1) & (binary_ref == 0))
+    fn = np.sum((binary_pred == 0) & (binary_ref == 1))
 
     confusion_matrix = np.array([[tp, fp], [fn, tn]]) / (tp + tn + fp + fn)
     accuracy = confusion_matrix[0, 0] + confusion_matrix[1, 1]
     sensitivity = tp / (tp + fn)
     specificity = tn / (tn + fp)
 
+    # auc 
+    tprs = []
+    fprs = []
+    thresholds = np.linspace(xmin, xmax, xmax - xmin)
+    for threshold in thresholds:
+        tp = np.sum((pred < threshold) & (ref < threshold))
+        fp = np.sum((pred < threshold) & (ref >= threshold))
+        fn = np.sum((pred >= threshold) & (ref < threshold))
+        tn = np.sum((pred >= threshold) & (ref >= threshold))
+
+        tpr = tp / (tp + fn) if (tp + fn) > 0 else 0
+        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
+
+        tprs.append(tpr)
+        fprs.append(fpr)
+    auc = np.trapz(tprs, fprs)
+
     return confusion_matrix, {
+        'auc': auc,
+        'tprs': tprs,
+        'fprs': fprs,
         'accuracy': accuracy,
         'sensitivity': sensitivity,
         'specificity': specificity,
